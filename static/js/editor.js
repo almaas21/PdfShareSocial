@@ -9,6 +9,7 @@ function initializeEditor(imageData) {
 
     // Store original image data
     originalImageData = imageData;
+    processedImageData = imageData; // Initialize with original image
 
     // Initialize Fabric.js canvas
     canvas = new fabric.Canvas('canvas', {
@@ -49,6 +50,10 @@ function initializeControls() {
     function updateImage() {
         if (!currentImage) return;
 
+        // Show loading state
+        downloadBtn.disabled = true;
+        downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
         fetch('/process_image', {
             method: 'POST',
             headers: {
@@ -64,9 +69,11 @@ function initializeControls() {
             if (data.error) {
                 throw new Error(data.error);
             }
+
             // Store the processed image data
             processedImageData = data.processed_image;
 
+            // Update canvas with new image
             fabric.Image.fromURL(`data:image/png;base64,${data.processed_image}`, function(img) {
                 canvas.clear();
                 img.scaleToWidth(canvas.width);
@@ -74,10 +81,17 @@ function initializeControls() {
                 canvas.centerObject(img);
                 canvas.renderAll();
                 currentImage = img;
+
+                // Reset download button
+                downloadBtn.disabled = false;
+                downloadBtn.innerHTML = '<i class="fas fa-download me-2"></i>Download';
             });
         })
         .catch(error => {
             alert(error.message || 'Error processing image');
+            // Reset download button on error
+            downloadBtn.disabled = false;
+            downloadBtn.innerHTML = '<i class="fas fa-download me-2"></i>Download';
         });
     }
 
@@ -132,11 +146,21 @@ function initializeControls() {
     });
 
     downloadBtn.addEventListener('click', function() {
-        if (!processedImageData) return;
+        if (!processedImageData) {
+            alert('Please wait for image processing to complete');
+            return;
+        }
 
-        const link = document.createElement('a');
-        link.download = 'instagram-image.png';
-        link.href = `data:image/png;base64,${processedImageData}`;
-        link.click();
+        try {
+            const link = document.createElement('a');
+            link.download = 'instagram-image.png';
+            link.href = `data:image/png;base64,${processedImageData}`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('Download error:', error);
+            alert('Error downloading the image. Please try again.');
+        }
     });
 }
