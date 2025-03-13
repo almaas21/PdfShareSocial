@@ -4,7 +4,7 @@ let currentImage;
 function initializeEditor(imageData) {
     const canvasContainer = document.getElementById('canvas').parentElement;
     const containerWidth = canvasContainer.offsetWidth;
-    
+
     // Initialize Fabric.js canvas
     canvas = new fabric.Canvas('canvas', {
         width: containerWidth,
@@ -29,13 +29,15 @@ function initializeControls() {
     const contrast = document.getElementById('contrast');
     const grayscaleBtn = document.getElementById('grayscaleBtn');
     const enhanceBtn = document.getElementById('enhanceBtn');
+    const perspectiveBtn = document.getElementById('perspectiveBtn');
     const downloadBtn = document.getElementById('downloadBtn');
 
     let operations = {
         brightness: 1,
         contrast: 1,
         grayscale: false,
-        enhance: false
+        enhance: false,
+        perspective_correction: false
     };
 
     function updateImage() {
@@ -85,6 +87,12 @@ function initializeControls() {
 
     enhanceBtn.addEventListener('click', function() {
         operations.enhance = !operations.enhance;
+        this.classList.toggle('btn-primary');
+        updateImage();
+    });
+
+    perspectiveBtn.addEventListener('click', function() {
+        operations.perspective_correction = !operations.perspective_correction;
         this.classList.toggle('btn-primary');
         updateImage();
     });
