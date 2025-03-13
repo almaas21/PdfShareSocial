@@ -57,7 +57,7 @@ def convert_to_instagram_size(image):
 
 def apply_crop(image, crop):
     """
-    Apply free-form crop using polygon points
+    Apply selection-based crop, keeping only the selected area
     """
     if not crop or 'points' not in crop:
         return image
@@ -69,20 +69,13 @@ def apply_crop(image, crop):
     points = points.reshape((-1, 1, 2))
     cv2.fillPoly(mask, [points], 255)
 
-    # Get bounding rectangle of the polygon
-    x, y, w, h = cv2.boundingRect(points)
+    # Create a 4-channel image (BGRA) for transparency
+    rgba = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
 
-    # Apply mask and crop to bounding rectangle
-    masked = cv2.bitwise_and(image, image, mask=mask)
-    cropped = masked[y:y+h, x:x+w]
+    # Make non-selected areas transparent
+    rgba[:, :, 3] = mask
 
-    # Remove any remaining black borders
-    gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
-    _, alpha = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
-    x, y, w, h = cv2.boundingRect(alpha)
-    final_crop = cropped[y:y+h, x:x+w]
-
-    return final_crop
+    return rgba
 
 def process_image(image_bytes, operations=None):
     """
@@ -123,12 +116,10 @@ def process_image(image_bytes, operations=None):
         cv_image = convert_to_instagram_size(cv_image)
 
     # Convert back to PIL Image with high quality
-    image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
-
-    # Apply template if specified
-    if operations.get('template'):
-        from utils.templates import apply_template
-        return apply_template(image_bytes, operations['template'])
+    if len(cv_image.shape) == 3 and cv_image.shape[2] == 4:  # RGBA
+        image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGRA2RGBA))
+    else:  # RGB
+        image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
 
     # Convert to bytes with maximum quality
     img_byte_arr = io.BytesIO()

@@ -154,7 +154,7 @@ function initializeControls() {
         canvas.on('mouse:move', draw);
         canvas.on('mouse:up', stopDrawing);
 
-        cropBtn.innerHTML = '<i class="fas fa-check me-2"></i>Apply Crop';
+        cropBtn.innerHTML = '<i class="fas fa-check me-2"></i>Apply Selection';
         cropBtn.classList.add('btn-primary');
     }
 
@@ -164,7 +164,7 @@ function initializeControls() {
         canvas.off('mouse:move', draw);
         canvas.off('mouse:up', stopDrawing);
 
-        cropBtn.innerHTML = '<i class="fas fa-crop me-2"></i>Crop';
+        cropBtn.innerHTML = '<i class="fas fa-crop me-2"></i>Select Area';
         cropBtn.classList.remove('btn-primary');
 
         updateImage();
@@ -178,7 +178,7 @@ function initializeControls() {
         // Start new polygon
         if (points.length === 1) {
             cropPolygon = new fabric.Polygon(points, {
-                fill: 'rgba(0,0,0,0.3)',
+                fill: 'rgba(255,255,255,0.3)',
                 stroke: '#fff',
                 strokeWidth: 2,
                 selectable: false
@@ -207,6 +207,8 @@ function initializeControls() {
             if (cropPolygon) {
                 cropPolygon.set({ points: points });
                 canvas.renderAll();
+                // Automatically apply the crop after drawing
+                disableCropMode();
             }
         }
     }
