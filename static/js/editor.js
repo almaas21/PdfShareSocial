@@ -37,7 +37,8 @@ function initializeControls() {
         contrast: 1,
         grayscale: false,
         enhance: false,
-        perspective_correction: false
+        perspective_correction: false,
+        show_boundaries: true
     };
 
     function updateImage() {
@@ -91,9 +92,31 @@ function initializeControls() {
         updateImage();
     });
 
+    let perspectiveState = 'off'; // 'off', 'detecting', 'correcting'
     perspectiveBtn.addEventListener('click', function() {
-        operations.perspective_correction = !operations.perspective_correction;
-        this.classList.toggle('btn-primary');
+        switch (perspectiveState) {
+            case 'off':
+                operations.perspective_correction = true;
+                operations.show_boundaries = true;
+                perspectiveState = 'detecting';
+                this.innerHTML = '<i class="fas fa-check me-2"></i>Apply Correction';
+                this.classList.add('btn-warning');
+                break;
+            case 'detecting':
+                operations.show_boundaries = false;
+                perspectiveState = 'correcting';
+                this.innerHTML = '<i class="fas fa-crop-alt me-2"></i>Fix Perspective';
+                this.classList.remove('btn-warning');
+                this.classList.add('btn-primary');
+                break;
+            case 'correcting':
+                operations.perspective_correction = false;
+                operations.show_boundaries = true;
+                perspectiveState = 'off';
+                this.innerHTML = '<i class="fas fa-crop-alt me-2"></i>Fix Perspective';
+                this.classList.remove('btn-primary');
+                break;
+        }
         updateImage();
     });
 

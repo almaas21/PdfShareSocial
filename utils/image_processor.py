@@ -5,12 +5,23 @@ import io
 
 def enhance_image(image):
     """
-    Enhance image using adaptive histogram equalization
+    Enhance image using adaptive histogram equalization while maintaining sharpness
     """
+    # Split into LAB channels
     lab = cv2.cvtColor(image, cv2.COLOR_BGR2LAB)
     l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+
+    # Apply CLAHE to L channel
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
     l = clahe.apply(l)
+
+    # Apply sharpening
+    kernel = np.array([[-1,-1,-1],
+                      [-1, 9,-1],
+                      [-1,-1,-1]])
+    l = cv2.filter2D(l, -1, kernel)
+
+    # Merge back
     lab = cv2.merge((l,a,b))
     return cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
 
@@ -28,8 +39,11 @@ def convert_to_instagram_size(image):
 
 def detect_document_edges(image):
     """
-    Detect document edges in the image
+    Detect document edges in the image and return both corners and visualization
     """
+    # Make a copy for visualization
+    vis_image = image.copy()
+
     # Convert to grayscale
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     # Apply Gaussian blur
@@ -38,15 +52,25 @@ def detect_document_edges(image):
     edges = cv2.Canny(blur, 75, 200)
     # Find contours
     contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    # Get the largest contour
+
+    corners = None
     if contours:
+        # Get the largest contour
         largest_contour = max(contours, key=cv2.contourArea)
         # Approximate the contour to get corners
         epsilon = 0.02 * cv2.arcLength(largest_contour, True)
         corners = cv2.approxPolyDP(largest_contour, epsilon, True)
+
         if len(corners) == 4:
-            return corners.reshape(4, 2)
-    return None
+            corners = corners.reshape(4, 2)
+            # Draw corners and boundaries on visualization image
+            cv2.drawContours(vis_image, [corners.reshape(-1,1,2)], -1, (0,255,0), 3)
+            for corner in corners:
+                cv2.circle(vis_image, tuple(corner), 10, (0,0,255), -1)
+
+            return corners, vis_image
+
+    return None, vis_image
 
 def apply_perspective_correction(image, corners):
     """
@@ -90,9 +114,10 @@ def process_image(image_bytes, operations=None):
 
     # Detect document edges and apply perspective correction if requested
     if operations.get('perspective_correction'):
-        corners = detect_document_edges(cv_image)
+        corners, vis_image = detect_document_edges(cv_image)
         if corners is not None:
-            cv_image = apply_perspective_correction(cv_image, corners)
+            # Return visualization if corners detected
+            cv_image = vis_image if operations.get('show_boundaries') else apply_perspective_correction(cv_image, corners)
 
     # Apply other operations
     if operations.get('brightness') or operations.get('contrast'):
@@ -106,6 +131,7 @@ def process_image(image_bytes, operations=None):
         cv_image = enhance_image(cv_image)
 
     if operations.get('grayscale'):
+        # Direct grayscale conversion without quality loss
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_GRAY2BGR)
 
@@ -117,5 +143,5 @@ def process_image(image_bytes, operations=None):
 
     # Convert to bytes
     img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='PNG')
+    image.save(img_byte_arr, format='PNG', quality=95)
     return img_byte_arr.getvalue()
