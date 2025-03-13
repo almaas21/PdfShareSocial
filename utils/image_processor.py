@@ -57,24 +57,32 @@ def convert_to_instagram_size(image):
 
 def apply_crop(image, crop):
     """
-    Crop the image based on specified coordinates
+    Apply free-form crop using polygon points
     """
-    if not crop:
+    if not crop or 'points' not in crop:
         return image
 
-    x = int(crop['left'])
-    y = int(crop['top'])
-    w = int(crop['width'])
-    h = int(crop['height'])
-
-    # Ensure coordinates are within image bounds
+    # Create mask from polygon points
     height, width = image.shape[:2]
-    x = max(0, min(x, width - 1))
-    y = max(0, min(y, height - 1))
-    w = max(1, min(w, width - x))
-    h = max(1, min(h, height - y))
+    mask = np.zeros((height, width), dtype=np.uint8)
+    points = np.array([[int(p['x']), int(p['y'])] for p in crop['points']], np.int32)
+    points = points.reshape((-1, 1, 2))
+    cv2.fillPoly(mask, [points], 255)
 
-    return image[y:y+h, x:x+w]
+    # Get bounding rectangle of the polygon
+    x, y, w, h = cv2.boundingRect(points)
+
+    # Apply mask and crop to bounding rectangle
+    masked = cv2.bitwise_and(image, image, mask=mask)
+    cropped = masked[y:y+h, x:x+w]
+
+    # Remove any remaining black borders
+    gray = cv2.cvtColor(cropped, cv2.COLOR_BGR2GRAY)
+    _, alpha = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY)
+    x, y, w, h = cv2.boundingRect(alpha)
+    final_crop = cropped[y:y+h, x:x+w]
+
+    return final_crop
 
 def process_image(image_bytes, operations=None):
     """

@@ -2,8 +2,8 @@ let canvas;
 let currentImage;
 let originalImageData;
 let processedImageData;
-let cropMode = false;
-let cropRect = null;
+let isDrawing = false;
+let cropPolygon = null;
 
 function initializeEditor(imageData) {
     const canvasContainer = document.getElementById('canvas').parentElement;
@@ -17,6 +17,7 @@ function initializeEditor(imageData) {
     canvas = new fabric.Canvas('canvas', {
         width: containerWidth,
         height: containerWidth,
+        selection: false // Disable group selection
     });
 
     // Load image
@@ -50,6 +51,10 @@ function initializeControls() {
         crop: null
     };
 
+    let points = [];
+    let lines = [];
+    let cropMode = false;
+
     function updateImage() {
         if (!currentImage) return;
 
@@ -57,14 +62,14 @@ function initializeControls() {
         downloadBtn.disabled = true;
         downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
 
-        // If we're in crop mode and have a crop rectangle, calculate crop coordinates
-        if (cropRect && cropMode) {
+        // If we have a crop polygon, calculate crop coordinates
+        if (cropPolygon) {
             const scale = currentImage.scaleX;
             operations.crop = {
-                left: cropRect.left / scale,
-                top: cropRect.top / scale,
-                width: cropRect.width * cropRect.scaleX / scale,
-                height: cropRect.height * cropRect.scaleY / scale
+                points: cropPolygon.points.map(point => ({
+                    x: point.x / scale,
+                    y: point.y / scale
+                }))
             };
         }
 
@@ -136,40 +141,81 @@ function initializeControls() {
         updateImage();
     });
 
-    cropBtn.addEventListener('click', function() {
-        if (!cropMode) {
-            // Enter crop mode
-            cropMode = true;
-            this.innerHTML = '<i class="fas fa-check me-2"></i>Apply Crop';
-            this.classList.add('btn-primary');
+    function enableCropMode() {
+        cropMode = true;
+        points = [];
+        lines = [];
+        if (cropPolygon) {
+            canvas.remove(cropPolygon);
+            cropPolygon = null;
+        }
 
-            // Create crop rectangle
-            const rect = new fabric.Rect({
-                left: canvas.width / 4,
-                top: canvas.height / 4,
-                width: canvas.width / 2,
-                height: canvas.height / 2,
+        canvas.on('mouse:down', startDrawing);
+        canvas.on('mouse:move', draw);
+        canvas.on('mouse:up', stopDrawing);
+
+        cropBtn.innerHTML = '<i class="fas fa-check me-2"></i>Apply Crop';
+        cropBtn.classList.add('btn-primary');
+    }
+
+    function disableCropMode() {
+        cropMode = false;
+        canvas.off('mouse:down', startDrawing);
+        canvas.off('mouse:move', draw);
+        canvas.off('mouse:up', stopDrawing);
+
+        cropBtn.innerHTML = '<i class="fas fa-crop me-2"></i>Crop';
+        cropBtn.classList.remove('btn-primary');
+
+        updateImage();
+    }
+
+    function startDrawing(event) {
+        isDrawing = true;
+        const pointer = canvas.getPointer(event.e);
+        points.push({ x: pointer.x, y: pointer.y });
+
+        // Start new polygon
+        if (points.length === 1) {
+            cropPolygon = new fabric.Polygon(points, {
                 fill: 'rgba(0,0,0,0.3)',
                 stroke: '#fff',
                 strokeWidth: 2,
-                strokeDashArray: [5, 5]
+                selectable: false
             });
+            canvas.add(cropPolygon);
+        }
+    }
 
-            cropRect = rect;
-            canvas.add(rect);
-            canvas.setActiveObject(rect);
-            rect.bringToFront();
-        } else {
-            // Apply crop
-            cropMode = false;
-            this.innerHTML = '<i class="fas fa-crop me-2"></i>Crop';
-            this.classList.remove('btn-primary');
+    function draw(event) {
+        if (!isDrawing) return;
 
-            if (cropRect) {
-                canvas.remove(cropRect);
-                updateImage();
-                cropRect = null;
+        const pointer = canvas.getPointer(event.e);
+        points.push({ x: pointer.x, y: pointer.y });
+
+        if (cropPolygon) {
+            cropPolygon.set({ points: points });
+            canvas.renderAll();
+        }
+    }
+
+    function stopDrawing() {
+        isDrawing = false;
+        if (points.length > 2) {
+            // Close the polygon
+            points.push(points[0]);
+            if (cropPolygon) {
+                cropPolygon.set({ points: points });
+                canvas.renderAll();
             }
+        }
+    }
+
+    cropBtn.addEventListener('click', function() {
+        if (!cropMode) {
+            enableCropMode();
+        } else {
+            disableCropMode();
         }
     });
 
