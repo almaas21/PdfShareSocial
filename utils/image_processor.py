@@ -50,8 +50,10 @@ def convert_to_instagram_size(image):
         padding = diff // 2
         image = cv2.copyMakeBorder(image, padding, diff - padding, 0, 0, cv2.BORDER_CONSTANT, value=[255, 255, 255])
 
-    # Now resize to 1080x1080 using high-quality interpolation
-    return cv2.resize(image, (1080, 1080), interpolation=cv2.INTER_CUBIC)
+    # Only resize if the image is smaller than 1080x1080
+    if height < 1080 or width < 1080:
+        return cv2.resize(image, (1080, 1080), interpolation=cv2.INTER_LANCZOS4)
+    return image
 
 def detect_document_edges(image):
     """
@@ -115,7 +117,7 @@ def apply_perspective_correction(image, corners):
     matrix = cv2.getPerspectiveTransform(corners_sorted, target_corners)
 
     # Apply perspective correction with high-quality interpolation
-    return cv2.warpPerspective(image, matrix, (width, height), flags=cv2.INTER_CUBIC)
+    return cv2.warpPerspective(image, matrix, (width, height), flags=cv2.INTER_LANCZOS4)
 
 def process_image(image_bytes, operations=None):
     """
@@ -127,6 +129,9 @@ def process_image(image_bytes, operations=None):
     # Convert bytes to image
     image = Image.open(io.BytesIO(image_bytes))
     cv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+
+    # Store original size
+    original_height, original_width = cv_image.shape[:2]
 
     # Detect document edges and apply perspective correction if requested
     if operations.get('perspective_correction'):
@@ -152,7 +157,8 @@ def process_image(image_bytes, operations=None):
         cv_image = cv2.cvtColor(cv_image, cv2.COLOR_GRAY2BGR)
 
     # Ensure Instagram size with high quality
-    cv_image = convert_to_instagram_size(cv_image)
+    if max(original_height, original_width) > 1080:
+        cv_image = convert_to_instagram_size(cv_image)
 
     # Convert back to PIL Image with high quality
     image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))

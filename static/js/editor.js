@@ -1,6 +1,7 @@
 let canvas;
 let currentImage;
 let originalImageData;
+let processedImageData;
 
 function initializeEditor(imageData) {
     const canvasContainer = document.getElementById('canvas').parentElement;
@@ -63,6 +64,9 @@ function initializeControls() {
             if (data.error) {
                 throw new Error(data.error);
             }
+            // Store the processed image data
+            processedImageData = data.processed_image;
+
             fabric.Image.fromURL(`data:image/png;base64,${data.processed_image}`, function(img) {
                 canvas.clear();
                 img.scaleToWidth(canvas.width);
@@ -128,15 +132,11 @@ function initializeControls() {
     });
 
     downloadBtn.addEventListener('click', function() {
-        if (!currentImage) return;
+        if (!processedImageData) return;
 
         const link = document.createElement('a');
         link.download = 'instagram-image.png';
-        // Get the current processed image from the canvas
-        link.href = canvas.toDataURL({
-            format: 'png',
-            quality: 1
-        });
+        link.href = `data:image/png;base64,${processedImageData}`;
         link.click();
     });
 }
