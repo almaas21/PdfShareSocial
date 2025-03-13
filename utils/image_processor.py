@@ -55,69 +55,26 @@ def convert_to_instagram_size(image):
         return cv2.resize(image, (1080, 1080), interpolation=cv2.INTER_LANCZOS4)
     return image
 
-def detect_document_edges(image):
+def apply_crop(image, crop):
     """
-    Detect document edges in the image and return both corners and visualization
+    Crop the image based on specified coordinates
     """
-    # Make a copy for visualization
-    vis_image = image.copy()
-
-    # Convert to grayscale
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # Apply Gaussian blur
-    blur = cv2.GaussianBlur(gray, (5, 5), 0)
-    # Detect edges
-    edges = cv2.Canny(blur, 75, 200)
-    # Find contours
-    contours, _ = cv2.findContours(edges, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-
-    corners = None
-    if contours:
-        # Get the largest contour
-        largest_contour = max(contours, key=cv2.contourArea)
-        # Approximate the contour to get corners
-        epsilon = 0.02 * cv2.arcLength(largest_contour, True)
-        corners = cv2.approxPolyDP(largest_contour, epsilon, True)
-
-        if len(corners) == 4:
-            corners = corners.reshape(4, 2)
-            # Draw corners and boundaries on visualization image
-            cv2.drawContours(vis_image, [corners.reshape(-1,1,2)], -1, (0,255,0), 3)
-            for corner in corners:
-                cv2.circle(vis_image, tuple(corner), 10, (0,0,255), -1)
-
-            return corners, vis_image
-
-    return None, vis_image
-
-def apply_perspective_correction(image, corners):
-    """
-    Apply perspective correction using detected corners
-    """
-    if corners is None:
+    if not crop:
         return image
 
-    # Get image dimensions
+    x = int(crop['left'])
+    y = int(crop['top'])
+    w = int(crop['width'])
+    h = int(crop['height'])
+
+    # Ensure coordinates are within image bounds
     height, width = image.shape[:2]
+    x = max(0, min(x, width - 1))
+    y = max(0, min(y, height - 1))
+    w = max(1, min(w, width - x))
+    h = max(1, min(h, height - y))
 
-    # Define target corners (rectangle)
-    target_corners = np.float32([[0, 0], [width, 0], [width, height], [0, height]])
-
-    # Sort corners (top-left, top-right, bottom-right, bottom-left)
-    corners = corners.astype(np.float32)
-    s = corners.sum(axis=1)
-    corners_sorted = np.zeros((4, 2), dtype=np.float32)
-    corners_sorted[0] = corners[np.argmin(s)]  # Top-left
-    corners_sorted[2] = corners[np.argmax(s)]  # Bottom-right
-    diff = np.diff(corners, axis=1)
-    corners_sorted[1] = corners[np.argmin(diff)]  # Top-right
-    corners_sorted[3] = corners[np.argmax(diff)]  # Bottom-left
-
-    # Get perspective transform matrix
-    matrix = cv2.getPerspectiveTransform(corners_sorted, target_corners)
-
-    # Apply perspective correction with high-quality interpolation
-    return cv2.warpPerspective(image, matrix, (width, height), flags=cv2.INTER_LANCZOS4)
+    return image[y:y+h, x:x+w]
 
 def process_image(image_bytes, operations=None):
     """
@@ -133,12 +90,9 @@ def process_image(image_bytes, operations=None):
     # Store original size
     original_height, original_width = cv_image.shape[:2]
 
-    # Detect document edges and apply perspective correction if requested
-    if operations.get('perspective_correction'):
-        corners, vis_image = detect_document_edges(cv_image)
-        if corners is not None:
-            # Return visualization if corners detected
-            cv_image = vis_image if operations.get('show_boundaries') else apply_perspective_correction(cv_image, corners)
+    # Apply crop if specified
+    if operations.get('crop'):
+        cv_image = apply_crop(cv_image, operations['crop'])
 
     # Apply other operations
     if operations.get('brightness') or operations.get('contrast'):

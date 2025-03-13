@@ -2,6 +2,8 @@ let canvas;
 let currentImage;
 let originalImageData;
 let processedImageData;
+let cropMode = false;
+let cropRect = null;
 
 function initializeEditor(imageData) {
     const canvasContainer = document.getElementById('canvas').parentElement;
@@ -35,8 +37,8 @@ function initializeControls() {
     const contrast = document.getElementById('contrast');
     const grayscaleBtn = document.getElementById('grayscaleBtn');
     const enhanceBtn = document.getElementById('enhanceBtn');
-    const perspectiveBtn = document.getElementById('perspectiveBtn');
-    const templateSelect = document.getElementById('templateSelect'); // Added template select
+    const cropBtn = document.getElementById('cropBtn');
+    const templateSelect = document.getElementById('templateSelect');
     const downloadBtn = document.getElementById('downloadBtn');
 
     let operations = {
@@ -44,9 +46,8 @@ function initializeControls() {
         contrast: 1,
         grayscale: false,
         enhance: false,
-        perspective_correction: false,
-        show_boundaries: true,
-        template: '' // Added template property
+        template: '',
+        crop: null
     };
 
     function updateImage() {
@@ -55,6 +56,17 @@ function initializeControls() {
         // Show loading state
         downloadBtn.disabled = true;
         downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+
+        // If we're in crop mode and have a crop rectangle, calculate crop coordinates
+        if (cropRect && cropMode) {
+            const scale = currentImage.scaleX;
+            operations.crop = {
+                left: cropRect.left / scale,
+                top: cropRect.top / scale,
+                width: cropRect.width * cropRect.scaleX / scale,
+                height: cropRect.height * cropRect.scaleY / scale
+            };
+        }
 
         fetch('/process_image', {
             method: 'POST',
@@ -119,37 +131,46 @@ function initializeControls() {
         updateImage();
     });
 
-    templateSelect.addEventListener('change', function() { // Added event listener for template select
+    templateSelect.addEventListener('change', function() {
         operations.template = this.value;
         updateImage();
     });
 
-    let perspectiveState = 'off'; // 'off', 'detecting', 'correcting'
-    perspectiveBtn.addEventListener('click', function() {
-        switch (perspectiveState) {
-            case 'off':
-                operations.perspective_correction = true;
-                operations.show_boundaries = true;
-                perspectiveState = 'detecting';
-                this.innerHTML = '<i class="fas fa-check me-2"></i>Apply Correction';
-                this.classList.add('btn-warning');
-                break;
-            case 'detecting':
-                operations.show_boundaries = false;
-                perspectiveState = 'correcting';
-                this.innerHTML = '<i class="fas fa-crop-alt me-2"></i>Fix Perspective';
-                this.classList.remove('btn-warning');
-                this.classList.add('btn-primary');
-                break;
-            case 'correcting':
-                operations.perspective_correction = false;
-                operations.show_boundaries = true;
-                perspectiveState = 'off';
-                this.innerHTML = '<i class="fas fa-crop-alt me-2"></i>Fix Perspective';
-                this.classList.remove('btn-primary');
-                break;
+    cropBtn.addEventListener('click', function() {
+        if (!cropMode) {
+            // Enter crop mode
+            cropMode = true;
+            this.innerHTML = '<i class="fas fa-check me-2"></i>Apply Crop';
+            this.classList.add('btn-primary');
+
+            // Create crop rectangle
+            const rect = new fabric.Rect({
+                left: canvas.width / 4,
+                top: canvas.height / 4,
+                width: canvas.width / 2,
+                height: canvas.height / 2,
+                fill: 'rgba(0,0,0,0.3)',
+                stroke: '#fff',
+                strokeWidth: 2,
+                strokeDashArray: [5, 5]
+            });
+
+            cropRect = rect;
+            canvas.add(rect);
+            canvas.setActiveObject(rect);
+            rect.bringToFront();
+        } else {
+            // Apply crop
+            cropMode = false;
+            this.innerHTML = '<i class="fas fa-crop me-2"></i>Crop';
+            this.classList.remove('btn-primary');
+
+            if (cropRect) {
+                canvas.remove(cropRect);
+                updateImage();
+                cropRect = null;
+            }
         }
-        updateImage();
     });
 
     downloadBtn.addEventListener('click', function() {
