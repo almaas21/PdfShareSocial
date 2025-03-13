@@ -163,6 +163,11 @@ def process_image(image_bytes, operations=None):
     # Convert back to PIL Image with high quality
     image = Image.fromarray(cv2.cvtColor(cv_image, cv2.COLOR_BGR2RGB))
 
+    # Apply template if specified
+    if operations.get('template'):
+        from utils.templates import apply_template
+        return apply_template(image_bytes, operations['template'])
+
     # Convert to bytes with maximum quality
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='PNG', optimize=False, quality=100)

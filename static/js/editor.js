@@ -36,6 +36,7 @@ function initializeControls() {
     const grayscaleBtn = document.getElementById('grayscaleBtn');
     const enhanceBtn = document.getElementById('enhanceBtn');
     const perspectiveBtn = document.getElementById('perspectiveBtn');
+    const templateSelect = document.getElementById('templateSelect'); // Added template select
     const downloadBtn = document.getElementById('downloadBtn');
 
     let operations = {
@@ -44,7 +45,8 @@ function initializeControls() {
         grayscale: false,
         enhance: false,
         perspective_correction: false,
-        show_boundaries: true
+        show_boundaries: true,
+        template: '' // Added template property
     };
 
     function updateImage() {
@@ -114,6 +116,11 @@ function initializeControls() {
     enhanceBtn.addEventListener('click', function() {
         operations.enhance = !operations.enhance;
         this.classList.toggle('btn-primary');
+        updateImage();
+    });
+
+    templateSelect.addEventListener('change', function() { // Added event listener for template select
+        operations.template = this.value;
         updateImage();
     });
 
