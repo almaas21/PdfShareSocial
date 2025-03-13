@@ -1,9 +1,13 @@
 let canvas;
 let currentImage;
+let originalImageData;
 
 function initializeEditor(imageData) {
     const canvasContainer = document.getElementById('canvas').parentElement;
     const containerWidth = canvasContainer.offsetWidth;
+
+    // Store original image data
+    originalImageData = imageData;
 
     // Initialize Fabric.js canvas
     canvas = new fabric.Canvas('canvas', {
@@ -42,13 +46,15 @@ function initializeControls() {
     };
 
     function updateImage() {
+        if (!currentImage) return;
+
         fetch('/process_image', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                image: canvas.toDataURL(),
+                image: `data:image/png;base64,${originalImageData}`,
                 operations: operations
             })
         })
@@ -63,6 +69,7 @@ function initializeControls() {
                 canvas.add(img);
                 canvas.centerObject(img);
                 canvas.renderAll();
+                currentImage = img;
             });
         })
         .catch(error => {
@@ -121,8 +128,11 @@ function initializeControls() {
     });
 
     downloadBtn.addEventListener('click', function() {
+        if (!currentImage) return;
+
         const link = document.createElement('a');
         link.download = 'instagram-image.png';
+        // Get the current processed image from the canvas
         link.href = canvas.toDataURL({
             format: 'png',
             quality: 1
