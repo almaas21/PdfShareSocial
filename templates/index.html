@@ -1,0 +1,62 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Upload PDF</h5>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="pdfInput" accept=".pdf" class="d-none">
+                    <div class="text-center p-5 border border-2 border-dashed rounded">
+                        <i class="fas fa-file-pdf fa-3x mb-3"></i>
+                        <p>Drag and drop your PDF here or click to browse</p>
+                    </div>
+                </div>
+                <div class="progress mt-3 d-none" id="uploadProgress">
+                    <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="imageEditor" class="d-none">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Edit Image</h5>
+                    <div class="mb-3">
+                        <label class="form-label">Brightness</label>
+                        <input type="range" class="form-range" id="brightness" min="0.5" max="1.5" step="0.1" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Contrast</label>
+                        <input type="range" class="form-range" id="contrast" min="0.5" max="1.5" step="0.1" value="1">
+                    </div>
+                    <div class="mb-3">
+                        <button class="btn btn-secondary" id="grayscaleBtn">Grayscale</button>
+                        <button class="btn btn-secondary" id="enhanceBtn">Enhance</button>
+                    </div>
+                    <button class="btn btn-primary" id="downloadBtn">Download</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="imageList" class="row"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+<script src="{{ url_for('static', filename='js/editor.js') }}"></script>
+{% endblock %}

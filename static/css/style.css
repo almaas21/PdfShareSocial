@@ -1,0 +1,32 @@
+.upload-area {
+    cursor: pointer;
+}
+
+.border-dashed {
+    border-style: dashed !important;
+}
+
+#canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+.thumbnail {
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.thumbnail:hover {
+    transform: scale(1.05);
+}
+
+.image-preview {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+
+.edit-controls {
+    position: sticky;
+    top: 20px;
+}
