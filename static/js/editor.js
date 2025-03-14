@@ -259,12 +259,24 @@ function initializeControls() {
         }
 
         try {
+            // Convert base64 to blob
+            const byteString = atob(processedImageData);
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: 'image/png' });
+            
+            // Create object URL
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.download = 'instagram-image.png';
-            link.href = `data:image/png;base64,${processedImageData}`;
+            link.href = url;
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('Download error:', error);
             alert('Error downloading the image. Please try again.');
