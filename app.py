@@ -80,6 +80,22 @@ def process_image_endpoint():
         data = request.json
         image_data = data.get('image')
         operations = data.get('operations', {})
+        page_ids = data.get('pageIds', [])
+        apply_to_all = data.get('applyToAll', False)
+        
+        if apply_to_all:
+            # Process all pages with the same operations
+            processed_images = []
+            for page_id in page_ids:
+                session_key = f'page_{page_id}'
+                if session_key in session:
+                    page_image = session[session_key]
+                    processed = process_image(base64.b64decode(page_image), operations)
+                    processed_images.append({
+                        'id': page_id,
+                        'data': base64.b64encode(processed).decode('utf-8')
+                    })
+            return jsonify({'processed_images': processed_images})
 
         # Get image data from base64
         import base64

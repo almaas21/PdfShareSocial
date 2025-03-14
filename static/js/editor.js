@@ -62,6 +62,9 @@ function initializeControls() {
         downloadBtn.disabled = true;
         downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
 
+        const applyToAll = document.getElementById('applyToAll').checked;
+        const pageIds = applyToAll ? getAllPageIds() : [getCurrentPageId()];
+
         // If we have a crop polygon, calculate crop coordinates
         if (cropPolygon) {
             const scale = currentImage.scaleX;
@@ -80,7 +83,9 @@ function initializeControls() {
             },
             body: JSON.stringify({
                 image: `data:image/png;base64,${originalImageData}`,
-                operations: operations
+                operations: operations,
+                pageIds: pageIds,
+                applyToAll: applyToAll
             })
         })
         .then(response => response.json())
