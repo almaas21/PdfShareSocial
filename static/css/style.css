@@ -30,3 +30,47 @@
     position: sticky;
     top: 20px;
 }
+/* Mobile-first styles */
+#canvas {
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100%;
+}
+
+@media (max-width: 768px) {
+    .upload-area {
+        padding: 10px !important;
+    }
+    
+    .card {
+        margin-bottom: 1rem !important;
+    }
+    
+    .btn {
+        padding: 0.8rem !important;
+        font-size: 1rem !important;
+    }
+    
+    .form-range {
+        height: 2rem;
+    }
+    
+    #imageEditor .col-md-8,
+    #imageEditor .col-md-4 {
+        padding: 0.5rem;
+    }
+    
+    .progress {
+        height: 1rem;
+    }
+}
+
+/* Touch-friendly controls */
+.form-range::-webkit-slider-thumb {
+    width: 24px;
+    height: 24px;
+}
+
+.form-select {
+    height: 3rem;
+}
