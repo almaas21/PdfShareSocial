@@ -259,26 +259,43 @@ function initializeControls() {
         }
 
         try {
-            // Create data URL directly from base64
             const dataUrl = `data:image/png;base64,${processedImageData}`;
             
-            // Check if running on iOS
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            // Check if running on mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            if (isIOS) {
-                // For iOS devices, open in new tab
-                window.open(dataUrl);
+            if (isMobile) {
+                // For mobile devices, open in new window and trigger download
+                const newWindow = window.open('');
+                if (newWindow) {
+                    newWindow.document.write(`
+                        <html>
+                            <head>
+                                <title>Download Image</title>
+                                <meta name="viewport" content="width=device-width, initial-scale=1">
+                            </head>
+                            <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#f0f0f0;">
+                                <img src="${dataUrl}" style="max-width:100%;height:auto;" />
+                                <a href="${dataUrl}" download="instagram-image.png" id="download" style="display:none;"></a>
+                                <script>
+                                    document.getElementById('download').click();
+                                    setTimeout(() => window.close(), 1000);
+                                </script>
+                            </body>
+                        </html>
+                    `);
+                    newWindow.document.close();
+                } else {
+                    window.location.href = dataUrl;
+                }
             } else {
-                // For other devices, try download
+                // For desktop devices
                 const link = document.createElement('a');
                 link.download = 'instagram-image.png';
                 link.href = dataUrl;
-                link.target = '_blank';
                 document.body.appendChild(link);
                 link.click();
-                setTimeout(() => {
-                    document.body.removeChild(link);
-                }, 100);
+                document.body.removeChild(link);
             }
         } catch (error) {
             console.error('Download error:', error);
