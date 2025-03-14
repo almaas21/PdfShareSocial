@@ -259,24 +259,27 @@ function initializeControls() {
         }
 
         try {
-            // Convert base64 to blob
-            const byteString = atob(processedImageData);
-            const ab = new ArrayBuffer(byteString.length);
-            const ia = new Uint8Array(ab);
-            for (let i = 0; i < byteString.length; i++) {
-                ia[i] = byteString.charCodeAt(i);
-            }
-            const blob = new Blob([ab], { type: 'image/png' });
+            // Create data URL directly from base64
+            const dataUrl = `data:image/png;base64,${processedImageData}`;
             
-            // Create object URL
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.download = 'instagram-image.png';
-            link.href = url;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            window.URL.revokeObjectURL(url);
+            // Check if running on iOS
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            
+            if (isIOS) {
+                // For iOS devices, open in new tab
+                window.open(dataUrl);
+            } else {
+                // For other devices, try download
+                const link = document.createElement('a');
+                link.download = 'instagram-image.png';
+                link.href = dataUrl;
+                link.target = '_blank';
+                document.body.appendChild(link);
+                link.click();
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                }, 100);
+            }
         } catch (error) {
             console.error('Download error:', error);
             alert('Error downloading the image. Please try again.');
