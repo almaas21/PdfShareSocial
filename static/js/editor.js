@@ -221,6 +221,37 @@ function initializeControls() {
         }
     });
 
+    function shareToInstagram(type) {
+        if (!processedImageData) {
+            alert('Please wait for image processing to complete');
+            return;
+        }
+
+        // Create temporary link
+        const link = document.createElement('a');
+        link.href = `data:image/png;base64,${processedImageData}`;
+        
+        // Open Instagram with appropriate URL scheme
+        if (type === 'post') {
+            window.open('instagram://library?AssetPath=' + encodeURIComponent(link.href));
+        } else if (type === 'reel') {
+            window.open('instagram://camera?type=clip');
+        } else if (type === 'story') {
+            window.open('instagram://story-camera');
+        }
+        
+        // Fallback for desktop
+        setTimeout(() => {
+            if (type === 'post') {
+                window.open('https://instagram.com');
+            }
+        }, 2000);
+    }
+
+    document.getElementById('sharePostBtn').addEventListener('click', () => shareToInstagram('post'));
+    document.getElementById('shareReelBtn').addEventListener('click', () => shareToInstagram('reel'));
+    document.getElementById('shareStoryBtn').addEventListener('click', () => shareToInstagram('story'));
+
     downloadBtn.addEventListener('click', function() {
         if (!processedImageData) {
             alert('Please wait for image processing to complete');
