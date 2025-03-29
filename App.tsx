@@ -31,7 +31,7 @@ export default function App() {
         name: 'upload.jpg'
       });
 
-      const response = await fetch('YOUR_REPLIT_DEPLOYED_URL/upload', {
+      const response = await fetch('https://${window.location.hostname}/upload', {
         method: 'POST',
         body: formData,
         headers: {
