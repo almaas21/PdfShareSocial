@@ -31,7 +31,7 @@ export default function App() {
         name: 'upload.jpg'
       });
 
-      const response = await fetch('https://${window.location.hostname}/upload', {
+      const response = await fetch('https://pdfsharesocial.onrender.com/upload', {
         method: 'POST',
         body: formData,
         headers: {
